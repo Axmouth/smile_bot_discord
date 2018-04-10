@@ -1,10 +1,23 @@
 import json
 
 outputfilename = "data.json"
+userfilename = "user.json"
+
+
+def load_user():
+    try:
+        savefile = open(userfilename)
+        user = json.load(savefile)
+    except:
+        with open(userfilename, 'w') as userfile:
+            json.dump("", userfile)
+            return ""
+    return user
+
 
 def load_data():
     try:
-        savefile = open('data.json')
+        savefile = open(outputfilename)
         data = json.load(savefile)
     except:
         with open(outputfilename, 'w') as outfile:

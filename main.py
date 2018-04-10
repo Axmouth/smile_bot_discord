@@ -6,14 +6,14 @@ __version__ = '0.1.0'
 
 from discord.ext.commands import Bot
 from discord import Game
-from data_loader import load_data, save_data
+from data_loader import load_data, save_data, load_user
 import discord
 import asyncio
 import requests
 import random
 
 SETTINGS_CATEGORIES = ["assignable-roles"]
-TOKEN = 'NDMzMjUwNjcxNTIxNjkzNzAz.Da5N-g.RYd58OiLLVxRls3CrlxZe3wvyaM'
+TOKEN = load_user()
 BOT_PREFIX = ('~')
 SETTINGS_DATA = {}
 
