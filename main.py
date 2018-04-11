@@ -6,14 +6,15 @@ __version__ = '0.1.0'
 
 from discord.ext.commands import Bot
 from discord import Game
-from data_loader import load_data, save_data, load_user
+from data_loader import load_data, save_data, load_user_data
 import discord
 import asyncio
 import requests
 import random
 
 SETTINGS_CATEGORIES = ["assignable-roles"]
-TOKEN = load_user()
+user_data = load_user_data()
+TOKEN = user_data["token"]
 BOT_PREFIX = ('~')
 SETTINGS_DATA = {}
 
@@ -117,16 +118,6 @@ async def bitcoin():
         await client.say("Error contacting server..")
 
 
-async def list_servers():
-    await client.wait_until_ready()
-    while not client.is_closed:
-        print("Current servers:")
-        for server in client.servers:
-            print("\t" + server.name)
-
-        await asyncio.sleep(120)
-
-
 @client.command(name='asr',
                 description='Add a role to the list of self-assignable roles',
                 brief='Add a self-assignable tole',
@@ -188,7 +179,18 @@ async def on_ready():
     print(client.user.id)
     print('------')
 
-    await client.change_presence(game=Game(name='with Elisa'))
+    await client.change_presence(game=Game(name=random.choice(user_data["games"])))
+
+
+async def list_servers():
+    await client.wait_until_ready()
+    while not client.is_closed:
+        print("Current servers:")
+        for server in client.servers:
+            print("\t" + server.name)
+
+        await asyncio.sleep(120)
+        await client.change_presence(game=Game(name=random.choice(user_data["games"])))
 
 
 def nocodify(text):

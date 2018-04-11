@@ -1,6 +1,6 @@
 __title__ = 'Discord Bot'
 __author__ = 'Axmouth'
-__license__ = 'MIT'
+__license__ = 'GPL v2'
 __copyright__ = 'Copyright 2018- Axmouth'
 __version__ = '0.1.0'
 

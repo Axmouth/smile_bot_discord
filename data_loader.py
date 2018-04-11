@@ -1,10 +1,10 @@
 import json
 
 outputfilename = "data.json"
-userfilename = "user.json"
+userfilename = "userdata.json"
 
 
-def load_user():
+def load_user_data():
     try:
         savefile = open(userfilename)
         user = json.load(savefile)
@@ -30,5 +30,11 @@ def save_data(data):
         json.dump(data, outfile)
 
 
+def save_user_data(userdata):
+    with open(userfilename, 'w') as outfile:
+        json.dump(userdata, outfile)
+
+
 if __name__ == "__main__":
+    load_user_data()
     load_data()
