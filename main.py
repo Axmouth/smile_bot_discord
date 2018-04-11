@@ -197,9 +197,9 @@ async def on_ready():
 
 
 @client.event
-async def on_message (message):
+async def on_message(message):
     bot_id = client.user.id
-    if bot_id in message.raw_mentions:
+    if bot_id in message.raw_mentions or '188665430720774144' in message.raw_mentions:
         if TextBlob(message.content).sentiment[0] >= 0:
             await client.add_reaction(message, HEART_EMOJI)
         else:
