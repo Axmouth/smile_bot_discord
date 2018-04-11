@@ -6,10 +6,12 @@ __version__ = '0.1.0'
 
 
 import discord
+from data_loader import load_user_data
 #from discord.ext.commands import Bot
 
 #TOKEN = '433250671521693703'
-TOKEN = 'NDMzMjUwNjcxNTIxNjkzNzAz.Da5N-g.RYd58OiLLVxRls3CrlxZe3wvyaM'
+user_data = load_user_data()
+TOKEN = user_data["token"]
 
 client = discord.Client()
 #my_bot = Bot(command_prefix="!")
