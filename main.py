@@ -15,7 +15,7 @@ import random
 SETTINGS_CATEGORIES = ["assignable-roles"]
 user_data = load_user_data()
 TOKEN = user_data["token"]
-BOT_PREFIX = ('~')
+BOT_PREFIX = user_data["prefix"]
 SETTINGS_DATA = {}
 
 client = Bot(command_prefix = BOT_PREFIX)
@@ -123,6 +123,10 @@ async def bitcoin():
                 brief='Add a self-assignable tole',
                 pass_context=True,)
 async def asr(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command")
+        return
     global SETTINGS_DATA
     server = context.message.server
     try:
@@ -146,6 +150,10 @@ async def asr(context):
                 brief='Remove a self-assignable tole',
                 pass_context=True,)
 async def rsr(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command")
+        return
     global SETTINGS_DATA
     server = context.message.server
     try:
@@ -191,6 +199,13 @@ async def list_servers():
 
         await asyncio.sleep(120)
         await client.change_presence(game=Game(name=random.choice(user_data["games"])))
+
+
+def check_admin(message):
+    author = message.author
+    author_permissions = author.permissions_in(message.channel)
+
+    return author_permissions.administrator
 
 
 def nocodify(text):

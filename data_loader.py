@@ -25,14 +25,15 @@ def load_data():
             return {}
     return data
 
+
 def save_data(data):
     with open(outputfilename, 'w') as outfile:
-        json.dump(data, outfile)
+        json.dump(data, outfile, indent=4, sort_keys=True)
 
 
 def save_user_data(userdata):
     with open(userfilename, 'w') as outfile:
-        json.dump(userdata, outfile)
+        json.dump(userdata, outfile, indent=4, sort_keys=True)
 
 
 if __name__ == "__main__":
