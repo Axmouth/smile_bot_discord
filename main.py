@@ -11,12 +11,18 @@ import discord
 import asyncio
 import requests
 import random
+from textblob import TextBlob
 
 SETTINGS_CATEGORIES = ["assignable-roles"]
 user_data = load_user_data()
 TOKEN = user_data["token"]
-BOT_PREFIX = user_data["prefix"]
+BOT_PREFIX = user_data["prefix"] #+ ["when_mentioned"]
 SETTINGS_DATA = {}
+HEART_EMOJI = "❤"
+ANGRY_EMOJI = "😠"
+
+reactions1 = ['✅', '❌']
+reactions2 = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣', '6⃣', '7⃣', '8⃣', '9⃣', '🔟']
 
 client = Bot(command_prefix = BOT_PREFIX)
 
@@ -188,6 +194,17 @@ async def on_ready():
     print('------')
 
     await client.change_presence(game=Game(name=random.choice(user_data["games"])))
+
+
+@client.event
+async def on_message (message):
+    bot_id = client.user.id
+    if bot_id in message.raw_mentions:
+        if TextBlob(message.content).sentiment[0] >= 0:
+            await client.add_reaction(message, HEART_EMOJI)
+        else:
+            await client.add_reaction(message, ANGRY_EMOJI)
+    await client.process_commands(message)
 
 
 async def list_servers():
