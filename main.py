@@ -12,8 +12,12 @@ import asyncio
 import requests
 import random
 from textblob import TextBlob
+import emoji
 
-SETTINGS_CATEGORIES = ["assignable-roles"]
+SETTINGS_CATEGORIES = ["assignable-roles", "warn-words", "strike-words",
+                       "channel-info", "welcome-message", "welcome-channel",
+                       "server-info", "neg-react" , "pos-react"
+                       ]
 user_data = load_user_data()
 TOKEN = user_data["token"]
 BOT_PREFIX = user_data["prefix"] #+ ["when_mentioned"]
@@ -24,7 +28,8 @@ ANGRY_EMOJI = "😠"
 reactions1 = ['✅', '❌']
 reactions2 = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣', '6⃣', '7⃣', '8⃣', '9⃣', '🔟']
 
-client = Bot(command_prefix = BOT_PREFIX)
+client = Bot(command_prefix=BOT_PREFIX)
+
 
 @client.command(name='8ball',
                 description='Answer a yes or no question',
@@ -40,7 +45,7 @@ async def eight_ball(context):
         'Definitely',
     ]
 
-    await client.say(nocodify(random.choice(possible_responses) + ", " + context.message.author.mention))
+    await client.say(random.choice(possible_responses) + ", " + context.message.author.mention)
 
 
 @client.command(name='gimme',
@@ -56,15 +61,15 @@ async def gimme(context):
         rolename = context.message.content.split(" ", 1)[1]
         role = discord.utils.get(server.roles, name=rolename)
         if not discord.utils.get(server.roles, name=rolename):
-            await client.say(nocodify("There is no such role" + ", " + context.message.author.mention))
+            await client.say("There is no such role" + ", " + context.message.author.mention)
             return
         if discord.utils.get(member_roles, name=rolename):
-            await client.say(nocodify("You already have this role" + ", " + context.message.author.mention))
+            await client.say("You already have this role" + ", " + context.message.author.mention)
             return
         await client.add_roles(member, role)
-        await client.say(nocodify("You now have the role " + rolename + ", " + context.message.author.mention))
+        await client.say("You now have the role " + rolename + ", " + context.message.author.mention)
     except:
-        await client.say(nocodify("You cannot assign this role" + ", " + context.message.author.mention))
+        await client.say("You cannot assign this role" + ", " + context.message.author.mention)
 
 
 @client.command(name='offofme',
@@ -79,16 +84,16 @@ async def offofme(context):
     try:
         rolename = context.message.content.split(" ", 1)[1]
         if not discord.utils.get(server.roles, name=rolename):
-            await client.say(nocodify("There is no such role" + ", " + context.message.author.mention))
+            await client.say("There is no such role" + ", " + context.message.author.mention)
             return
         if not discord.utils.get(member_roles, name=rolename):
-            await client.say(nocodify("You do not have this role" + ", " + context.message.author.mention))
+            await client.say("You do not have this role" + ", " + context.message.author.mention)
             return
         role = discord.utils.get(server.roles, name=rolename)
         await client.remove_roles(member, role)
-        await client.say(nocodify("You now do not have the role " + rolename + ", " + context.message.author.mention))
+        await client.say("You now do not have the role " + rolename + ", " + context.message.author.mention)
     except:
-        await client.say(nocodify("You cannot remove this role" + ", " + context.message.author.mention))
+        await client.say("You cannot remove this role" + ", " + context.message.author.mention)
 
 
 @client.command(name='listroles',
@@ -100,17 +105,16 @@ async def listroles(context):
     global SETTINGS_DATA
     server = context.message.server
     member = context.message.author
-    member_roles = member.roles
     rolestext = "The server allows you to assign the following roles:\n\n"
     try:
         if not SETTINGS_DATA[server.id]["assignable-roles"]:
-            await client.say(nocodify("No roles"))
+            await client.say("No roles")
             return
         for rolename in SETTINGS_DATA[server.id]["assignable-roles"]:
             rolestext += rolename + "\n"
-        await client.say(codifyplus(rolestext))
+        await client.say("```" + rolestext + "```")
     except:
-        await client.say(nocodify("Ops?"))
+        await client.say("Ops?")
 
 
 @client.command()
@@ -126,7 +130,7 @@ async def bitcoin():
 
 @client.command(name='asr',
                 description='Add a role to the list of self-assignable roles',
-                brief='Add a self-assignable tole',
+                brief='Add a self-assignable role',
                 pass_context=True,)
 async def asr(context):
     is_admin = check_admin(context.message)
@@ -136,15 +140,16 @@ async def asr(context):
     global SETTINGS_DATA
     server = context.message.server
     try:
-        rolename = context.message.content.split(" ", 1)[1]
-        if not discord.utils.get(server.roles, name=rolename):
-            await client.say(nocodify("There is no such role" + ", " + context.message.author.mention))
-            return
-        if rolename in SETTINGS_DATA[server.id]["assignable-roles"]:
-            await client.say("The role " + rolename + " is already on the list of self-assignable roles")
-            return
-        await client.say("The role " + rolename + " was added to the list of self-assignable roles")
-        SETTINGS_DATA[server.id]["assignable-roles"].append(rolename)
+        rolenames = parse_arguments(context.message)
+        for rolename in rolenames:
+            if not discord.utils.get(server.roles, name=rolename):
+                await client.say("There is no such role" + ", " + context.message.author.mention)
+                continue
+            if rolename in SETTINGS_DATA[server.id]["assignable-roles"]:
+                await client.say("The role " + rolename + " is already on the list of self-assignable roles")
+                continue
+            await client.say("The role " + rolename + " was added to the list of self-assignable roles")
+            SETTINGS_DATA[server.id]["assignable-roles"].append(rolename)
     except:
         await client.say("Error adding role")
 
@@ -153,7 +158,7 @@ async def asr(context):
 
 @client.command(name='rsr',
                 description='Remove a role from the list of self-assignable roles',
-                brief='Remove a self-assignable tole',
+                brief='Remove a self-assignable role',
                 pass_context=True,)
 async def rsr(context):
     is_admin = check_admin(context.message)
@@ -163,31 +168,210 @@ async def rsr(context):
     global SETTINGS_DATA
     server = context.message.server
     try:
-        rolename = context.message.content.split(" ", 1)[1]
-        if not discord.utils.get(server.roles, name=rolename):
-            await client.say(nocodify("There is no such role" + ", " + context.message.author.mention))
-            return
-        if rolename not in SETTINGS_DATA[server.id]["assignable-roles"]:
-            await client.say("The role " + rolename + " is already not on the list of self-assignable roles")
-            return
-        SETTINGS_DATA[server.id]["assignable-roles"].remove(rolename)
-        await client.say("The role " + rolename + " was removed from the list of self-assignable roles")
+        rolenames = parse_arguments(context.message)
+        for rolename in rolenames:
+            if not discord.utils.get(server.roles, name=rolename):
+                await client.say("There is no such role" + ", " + context.message.author.mention)
+                continue
+            if rolename not in SETTINGS_DATA[server.id]["assignable-roles"]:
+                await client.say("The role " + rolename + " is already not on the list of self-assignable roles")
+                continue
+            SETTINGS_DATA[server.id]["assignable-roles"].remove(rolename)
+            await client.say("The role " + rolename + " was removed from the list of self-assignable roles")
     except:
         await client.say("Error removing role")
 
     save_data(SETTINGS_DATA)
 
 
+@client.command(name='addwarnword',
+                description='Add a word/saying that will give a warning to users',
+                brief='Add a warning worthy word',
+                pass_context=True,)
+async def addwarnword(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command")
+        return
+    global SETTINGS_DATA
+    server = context.message.server
+    try:
+        words = parse_arguments(context.message)
+        for word in words:
+            if word in SETTINGS_DATA[server.id]["warn-words"]:
+                await client.say(word + " is already on the list of warn words")
+                continue
+            await client.say(word + " was added to the list of warn words")
+            SETTINGS_DATA[server.id]["assignable-roles"].append(word)
+    except:
+        await client.say("Error adding word")
+
+    save_data(SETTINGS_DATA)
+
+
+@client.command(name='removewarnword',
+                description='Remove a word/saying that will give a warning to users',
+                brief='Remove a warning worthy word',
+                pass_context=True,)
+async def removewarnword(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command")
+        return
+    global SETTINGS_DATA
+    server = context.message.server
+    try:
+        words = parse_arguments(context.message)
+        for word in words:
+            if word not in SETTINGS_DATA[server.id]["warn-words"]:
+                await client.say(word + " is already not on the list of warn words")
+                continue
+            await client.say(word + " was removed the list of warn words")
+            SETTINGS_DATA[server.id]["assignable-roles"].remove(word)
+    except:
+        await client.say("Error removing word")
+
+    save_data(SETTINGS_DATA)
+
+
+@client.command(name='welcomemsg',
+                description='Add a welcome message for new members',
+                brief='Add a welcome message',
+                pass_context=True,)
+async def welcomemsg(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command")
+        return
+    global SETTINGS_DATA
+    member = context.message.author
+    welcome_message = context.message.content.split(" ", 1)[1]
+    SETTINGS_DATA[member.server.id]["welcome-message"] = welcome_message
+    save_data(SETTINGS_DATA)
+    await client.say("The welcome message has been changed to:\n" +
+                     "```" + welcome_message + "```")
+
+
+@client.command(name='setserverinfo',
+                description='Add a server info message',
+                brief='Add server info',
+                pass_context=True,)
+async def setserverinfo(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command")
+        return
+    global SETTINGS_DATA
+    member = context.message.author
+    if not " " in context.message.content:
+        return
+    server_info = context.message.content.split(" ", 1)[1]
+    SETTINGS_DATA[member.server.id]["server-info"] = server_info
+    save_data(SETTINGS_DATA)
+    await client.say("The server info message has been changed to:\n" +
+                     "```" + server_info + "```")
+
+
+@client.command(name='serverinfo',
+                description='Display server info message',
+                brief='Display server info',
+                pass_context=True,)
+async def serverinfo(context):
+    member = context.message.author
+    if not SETTINGS_DATA[member.server.id]["server-info"]:
+        await client.say("The server info message for this server has not been set")
+        return
+    await client.say(SETTINGS_DATA[member.server.id]["server-info"]
+                     .replace("@user", context.message.author.mention))
+
+
+
+@client.command(name='setchannelinfo',
+                description='Add a channel info message',
+                brief='Add channel info',
+                pass_context=True,)
+async def setchannelinfo(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command")
+        return
+    global SETTINGS_DATA
+    member = context.message.author
+    if not SETTINGS_DATA[member.server.id]["channel-info"]:
+        SETTINGS_DATA[member.server.id]["channel-info"] = {}
+        save_data(SETTINGS_DATA)
+    channel_info = context.message.content.split(" ", 1)[1]
+    SETTINGS_DATA[member.server.id]["channel-info"][context.message.channel.id] = channel_info
+    save_data(SETTINGS_DATA)
+    await client.say("The channel info message for" + " has been changed to:\n" +
+                     "```" + channel_info + "```")
+
+
+@client.command(name='channelinfo',
+                description='Display server info message',
+                brief='Display server info',
+                pass_context=True,)
+async def channelinfo(context):
+    member = context.message.author
+    if context.message.channel.id not in SETTINGS_DATA[member.server.id]["channel-info"] or not SETTINGS_DATA[member.server.id]["channel-info"][context.message.channel.id]:
+        await client.say("The channel info message for this channel has not been set")
+        return
+    await client.say(SETTINGS_DATA[member.server.id]["channel-info"][context.message.channel.id]
+                     .replace("@user", context.message.author.mention))
+
+
+
+@client.command(name='setnegreact',
+                description='Set negative reaction when bot is mentioned',
+                brief="Set bot's negative reaction",
+                pass_context=True,)
+async def test(context):
+    words = parse_arguments(context.message)
+    checked_acquire_setting_dict(context.message.server.id, "neg-react")
+    SETTINGS_DATA[context.message.server.id]["neg-react"] = []
+    for word in words:
+        for char in word:
+            if char_is_emoji(char):
+                if char in SETTINGS_DATA[context.message.server.id]["neg-react"]:
+                    continue
+                SETTINGS_DATA[context.message.server.id]["neg-react"].append(char)
+                await client.add_reaction(context.message, word)
+    save_data(SETTINGS_DATA)
+
+
+@client.command(name='setposreact',
+                description='Set positive reaction when bot is mentioned',
+                brief="Set bot's positive reaction",
+                pass_context=True,)
+async def test(context):
+    words = parse_arguments(context.message)
+    checked_acquire_setting_dict(context.message.server.id, "pos-react")
+    SETTINGS_DATA[context.message.server.id]["pos-react"] = []
+    for word in words:
+        for char in word:
+            if char_is_emoji(char):
+                if char in SETTINGS_DATA[context.message.server.id]["pos-react"]:
+                    continue
+                SETTINGS_DATA[context.message.server.id]["pos-react"].append(char)
+                await client.add_reaction(context.message, word)
+    save_data(SETTINGS_DATA)
+
+
+@client.command(name='test',
+                description='test',
+                brief='test',
+                pass_context=True,)
+async def test(context):
+    member = context.message.author
+    await client.say(SETTINGS_DATA[member.server.id]["welcome-message"]
+                     .replace("@user", context.message.author.mention))
+
+
 @client.event
 async def on_ready():
     global SETTINGS_DATA
     SETTINGS_DATA = load_data()
-    for server in client.servers:
-        if server.id not in SETTINGS_DATA.keys():
-            SETTINGS_DATA[server.id] = {}
-            for setting in SETTINGS_CATEGORIES:
-                SETTINGS_DATA[server.id][setting] = []
-            save_data(SETTINGS_DATA)
+    settings_init()
     print('Logged in as')
     print(client.user.name)
     print(client.user.id)
@@ -197,13 +381,35 @@ async def on_ready():
 
 
 @client.event
+async def on_server_join(server):
+    if server.id not in SETTINGS_DATA.keys():
+        SETTINGS_DATA[server.id] = {}
+        for setting in SETTINGS_CATEGORIES:
+            SETTINGS_DATA[server.id][setting] = []
+        save_data(SETTINGS_DATA)
+
+
+@client.event
+async def on_member_join(member):
+    if SETTINGS_DATA[member.server.id]["welcome-message"]:
+        await client.say(SETTINGS_DATA[member.server.id]["welcome-message"]
+                         .replace("@user", member.mention))
+
+
+@client.event
 async def on_message(message):
     bot_id = client.user.id
-    if bot_id in message.raw_mentions or '188665430720774144' in message.raw_mentions:
+    if bot_id in message.raw_mentions:
         if TextBlob(message.content).sentiment[0] >= 0:
-            await client.add_reaction(message, HEART_EMOJI)
+            if SETTINGS_DATA[message.server.id]["pos-react"] is None:
+                SETTINGS_DATA[message.server.id]["pos-react"] = []
+            for emoji in SETTINGS_DATA[message.server.id]["pos-react"]:
+                await client.add_reaction(message, emoji)
         else:
-            await client.add_reaction(message, ANGRY_EMOJI)
+            if SETTINGS_DATA[message.server.id]["neg-react"] is None:
+                SETTINGS_DATA[message.server.id]["neg-react"] = []
+            for emoji in SETTINGS_DATA[message.server.id]["neg-react"]:
+                await client.add_reaction(message, emoji)
     await client.process_commands(message)
 
 
@@ -225,20 +431,47 @@ def check_admin(message):
     return author_permissions.administrator
 
 
-def nocodify(text):
-    return text
+async def check_admin_plus(message):
+    is_admin = check_admin(message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command")
 
 
-def nocodifyplus(text):
-    return text
+def checked_acquire_setting_dict(server_id, setting_category):
+    if setting_category not in SETTINGS_DATA[server_id].keys() and setting_category in SETTINGS_CATEGORIES:
+        SETTINGS_DATA[server_id][setting_category] = None
+        save_data(SETTINGS_DATA)
+        return SETTINGS_DATA[server_id][setting_category]
+    return SETTINGS_DATA[server_id][setting_category]
 
 
-def codify(text):
-    return "`" + text + "`"
+def settings_init():
+    global SETTINGS_DATA
+    for server in client.servers:
+        if server.id not in SETTINGS_DATA.keys():
+            SETTINGS_DATA[server.id] = {}
+            for setting in SETTINGS_CATEGORIES:
+                SETTINGS_DATA[server.id][setting] = []
+            save_data(SETTINGS_DATA)
 
 
-def codifyplus(text):
-    return "```" + text + "```"
+def parse_arguments(message):
+    if not " " in message.content:
+        return []
+    arguments_string = message.content.split(" ", 1)[1]
+    arguments_list = arguments_string.split(" ")
+    return arguments_list
+
+
+def char_is_emoji(character):
+    return character in emoji.UNICODE_EMOJI
+
+
+def text_has_emoji(text):
+    for character in text:
+        if character in emoji.UNICODE_EMOJI:
+            return True
+    return False
 
 
 if __name__ == "__main__":
