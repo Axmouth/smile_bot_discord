@@ -112,9 +112,9 @@ async def offofme(context):
             return
         role = discord.utils.get(server.roles, name=rolename)
         await client.remove_roles(member, role)
-        await client.say("You now do not have the role " + rolename + ", " + context.message.author.mention)
+        await client.say("You now do not have the role " + rolename + ", " + context.message.author.mention + ".")
     except:
-        await client.say("You cannot remove this role" + ", " + context.message.author.mention)
+        await client.say("You cannot remove this role" + ", " + context.message.author.mention + ".")
 
 
 @client.command(name='listroles',
@@ -145,7 +145,7 @@ async def listroles(context):
 async def userid(context):
     members = context.message.mentions
     for member in members:
-        await client.say("User ID for " + member.mention + " : " + member.id)
+        await client.say("User ID for " + member.mention + " : " + member.id + ".")
 
 
 @client.command(name='ban',
@@ -297,7 +297,7 @@ async def rsr(context):
         rolenames = parse_arguments(context.message)
         for rolename in rolenames:
             if not discord.utils.get(server.roles, name=rolename):
-                await client.say("There is no such role" + ", " + context.message.author.mention)
+                await client.say("There is no such role" + ", " + context.message.author.mention + ".")
                 continue
             if rolename not in SETTINGS_DATA[server.id]["assignable-roles"]:
                 await client.say("The role " + rolename + " is already not on the list of self-assignable roles.")
@@ -383,6 +383,10 @@ async def welcomemsg(context):
                 brief='Choose the welcome channel.',
                 pass_context=True,)
 async def setwelcomechannel(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
     if not context.message.channel_mentions:
         await client.say("No channel was specified, mention a channel : #channelname.")
         return
@@ -453,8 +457,8 @@ async def setchannelinfo(context):
 
 
 @client.command(name='channelinfo',
-                description='Display server info message',
-                brief='Display server info',
+                description='Display server info message.',
+                brief='Display server info.',
                 pass_context=True,)
 async def channelinfo(context):
     member = context.message.author
@@ -579,8 +583,8 @@ async def textunmute(context, *args):
 
 
 @client.command(name='voicemute',
-                description='Mute  a user from talking on voice channels',
-                brief='Mute someone from voice',
+                description='Mute  a user from talking on voice channels.',
+                brief='Mute someone from voice.',
                 pass_context=True,)
 async def voicemute(context, *args):
     is_admin = check_admin(context.message)
@@ -595,8 +599,8 @@ async def voicemute(context, *args):
 
 
 @client.command(name='voicunmute',
-                description='Unmute a user from talking on voice channels',
-                brief='Unmute someone from voice',
+                description='Unmute a user from talking on voice channels.',
+                brief='Unmute someone from voice.',
                 pass_context=True,)
 async def voiceunmute(context, *args):
     is_admin = check_admin(context.message)
@@ -611,26 +615,34 @@ async def voiceunmute(context, *args):
 
 
 @client.command(name='fullmute',
-                description='Mute a user from both voice chat and typing',
-                brief='Mute someone',
+                description='Mute a user from both voice chat and typing.',
+                brief='Mute someone.',
                 pass_context=True,)
 async def fullmute(context, target: str):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
     await textmute(context, target)
     await voicemute(context, target)
 
 
 @client.command(name='fullunmute',
-                description='Mute a user from typing for a specified amount of time. Their messages are deleted',
-                brief='Mute someone',
+                description='Mute a user from typing for a specified amount of time. Their messages are deleted.',
+                brief='Mute someone.',
                 pass_context=True,)
 async def fullunmute(context, target: str):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
     await textunmute(context, target)
     await voiceunmute(context, target)
 
 
 @client.command(name='dangerwords',
-                description='List of words than can get you in trouble',
-                brief='Words you should avoid',
+                description='List of words than can get you in trouble.',
+                brief='Words you should avoid.',
                 pass_context=True,)
 async def dangerwords(context):
     msg = "These words will lead to a warning:\n\n"
@@ -645,8 +657,8 @@ async def dangerwords(context):
 
 
 @client.command(name='ping',
-                description='Ping pong',
-                brief='Boop',)
+                description='Ping pong.',
+                brief='Boop.',)
 async def ping():
     await client.say("Pong!")
 
@@ -660,8 +672,8 @@ async def test(context, *args):
 
 
 @client.command(name='link',
-                description='Provide link to invite the bot',
-                brief='Invite link for the bot',
+                description='Provide link to invite the bot.',
+                brief='Invite link for the bot.',
                 pass_context=True,)
 async def link(context):
     await client.\
@@ -673,7 +685,7 @@ async def on_ready():
     global SETTINGS_DATA
     SETTINGS_DATA = load_data()
     settings_init()
-    print('Logged in as')
+    print('Logged in as:')
     print(client.user.name)
     print(client.user.id)
     print('------')
