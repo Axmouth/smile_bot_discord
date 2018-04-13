@@ -13,6 +13,7 @@ import requests
 import random
 from textblob import TextBlob
 import emoji
+import re
 
 SETTINGS_CATEGORIES = ["assignable-roles", "warn-words", "strike-words",
                        "channel-info", "welcome-message", "welcome-channel",
@@ -136,15 +137,46 @@ async def ban(context):
     if not is_admin:
         await client.say("You do not have permissions to use this command.")
         return
-    members = context.message.mentions
+    id_list = []
+    users = []
+    members = []
     args = parse_arguments(context.message)
     numdays = 1
     if args:
-        if args[-1].isdigit():
-            numdays = int(args[-1])
-    for member in members:
-        await ban(member, delete_message_days=numdays)
-        await client.say(member.mention + "has been banned from this server.")
+        if args[0].lower() == "id":
+            id_list = args[1:-1]
+            if args[-1].isdigit() and len(args[-1]) == 18:
+                id_list.append(args[-1])
+            elif args[-1].isdigit():
+                numdays = int(args[-1])
+            for member_id in id_list:
+                member = client.get_user_info(member_id)
+                if member is None:
+                    await client.say("The user with ID " + member_id + " could not be accessed.")
+                    continue
+                else:
+                    id_list.append(member_id)
+        else:
+            for mention in args:
+                member_id = re.sub('[<@>]', '', mention)
+                member = await client.get_user_info(member_id)
+                if member is None:
+                    await client.say("The user with ID " + member_id + " could not be accessed.")
+                    continue
+                else:
+                    id_list.append(member_id)
+    for member_id in id_list:
+        user = (await client.get_user_info(member_id))
+        if user in (await client.get_bans(context.message.server)):
+            await client.say(user.mention + " is already banned.")
+            continue
+        member = discord.Object(id=member_id)
+        member.server = discord.Object(id=context.message.server.id)
+        try:
+            await client.ban(member, delete_message_days=numdays)
+            await client.say(user.mention + " has been banned from " + context.message.server.name + ".")
+        except:
+            await client.say("You didn't have the privilege needed to ban " + user.mention + ".")
 
 
 @client.command(name='unban',
@@ -164,13 +196,31 @@ async def unban(context):
         if not banned_users:
             new_message_content += "None"
         for banned_user in banned_users:
-            new_message_content += banned_user.mention + " : " + banned_user.id
-        new_message_content += "\n\nUse this command again with an appropriate user ID."
+            new_message_content += banned_user.name + " -- " + banned_user.mention + " : " + banned_user.id
+        new_message_content += "\n\nUse this command again with the id parameter amd " \
+                               "an appropriate user ID or copy the mention code."
         new_message_content += "```"
         await client.say(new_message_content)
+    elif not members and args[0].lower() == "id":
+        for member_id in args[1:]:
+            member = await client.get_user_info(member_id)
+            members.append(member)
+    else:
+        for mention in args:
+            member_id = re.sub('[<@>]', '', mention)
+            member = await client.get_user_info(member_id)
+            if member is None:
+                await client.say("The user with ID " + member_id + " could not be accessed.")
+                continue
+            else:
+                members.append(member)
     for member in members:
-        await unban(context.message.server, member)
-        await client.say(member.mention + "has been unbanned from this server.")
+        if member not in (await client.get_bans(context.message.server)):
+            await client.say(member.mention + " is not banned.")
+            continue
+        await client.unban(context.message.server, member)
+        await client.say(member.mention + " has been unbanned from " +
+                         context.message.server.name + ".")
 
 
 @client.command()
@@ -369,7 +419,8 @@ async def setchannelinfo(context):
                 pass_context=True,)
 async def channelinfo(context):
     member = context.message.author
-    if context.message.channel.id not in SETTINGS_DATA[member.server.id]["channel-info"] or not SETTINGS_DATA[member.server.id]["channel-info"][context.message.channel.id]:
+    if context.message.channel.id not in SETTINGS_DATA[member.server.id]["channel-info"] \
+            or not SETTINGS_DATA[member.server.id]["channel-info"][context.message.channel.id]:
         await client.say("The channel info message for this channel has not been set.")
         return
     await client.say(SETTINGS_DATA[member.server.id]["channel-info"][context.message.channel.id]
