@@ -17,7 +17,7 @@ import re
 
 SETTINGS_CATEGORIES = ["assignable-roles", "warn-words", "strike-words",
                        "channel-info", "welcome-message", "welcome-channel",
-                       "server-info", "neg-react" , "pos-react"
+                       "server-info", "neg-react" , "pos-react", "textmuted-users",
                        ]
 user_data = load_user_data()
 TOKEN = user_data["token"]
@@ -44,6 +44,26 @@ async def eight_ball(context):
         'Too hard to tell',
         'It is quite possible',
         'Definitely',
+        "It is certain",
+        "It is decidedly so",
+        "Without a doubt",
+        "Yes definitely",
+        "You may rely on it",
+        "As I see it, yes",
+        "Most likely",
+        "Outlook good",
+        "Yes",
+        "Signs point to yes",
+        "Reply hazy try again",
+        "Ask again later",
+        "Better not tell you now",
+        "Cannot predict now",
+        "Concentrate and ask again",
+        "Don't count on it",
+        "My reply is no",
+        "My sources say no",
+        "Outlook not so good",
+        "Very doubtful",
     ]
 
     await client.say(random.choice(possible_responses) + ", " + context.message.author.mention + ".")
@@ -129,8 +149,8 @@ async def userid(context):
 
 
 @client.command(name='ban',
-                description='Get the id of a mentioned user.',
-                brief='Get user id.',
+                description='Ban a user and kick them from the server, preventing them from rejoining.',
+                brief='Ban a user.',
                 pass_context=True,)
 async def ban(context):
     is_admin = check_admin(context.message)
@@ -138,8 +158,6 @@ async def ban(context):
         await client.say("You do not have permissions to use this command.")
         return
     id_list = []
-    users = []
-    members = []
     args = parse_arguments(context.message)
     numdays = 1
     if args:
@@ -180,8 +198,8 @@ async def ban(context):
 
 
 @client.command(name='unban',
-                description='Get the id of a mentioned user.',
-                brief='Get user id.',
+                description='Unban a user from joining the server.',
+                brief='Unban a user.',
                 pass_context=True,)
 async def unban(context):
     is_admin = check_admin(context.message)
@@ -223,7 +241,9 @@ async def unban(context):
                          context.message.server.name + ".")
 
 
-@client.command()
+@client.command(name='bitcoin',
+                description='Display the current value of one bitcoin, based on internet data.',
+                brief='Bitcoin price.',)
 async def bitcoin():
     url = 'https://api.coindesk.com/v1/bpi/currentprice/BTC.json'
     try:
@@ -308,7 +328,7 @@ async def addwarnword(context):
                 await client.say(word + " is already on the list of warn words.")
                 continue
             await client.say(word + " was added to the list of warn words.")
-            SETTINGS_DATA[server.id]["assignable-roles"].append(word)
+            SETTINGS_DATA[server.id]["warn-words"].append(word)
     except:
         await client.say("Error adding word")
 
@@ -333,7 +353,7 @@ async def removewarnword(context):
                 await client.say(word + " is already not on the list of warn words.")
                 continue
             await client.say(word + " was removed the list of warn words.")
-            SETTINGS_DATA[server.id]["assignable-roles"].remove(word)
+            SETTINGS_DATA[server.id]["warn-words"].remove(word)
     except:
         await client.say("Error removing word.")
 
@@ -355,7 +375,26 @@ async def welcomemsg(context):
     SETTINGS_DATA[member.server.id]["welcome-message"] = welcome_message
     save_data(SETTINGS_DATA)
     await client.say("The welcome message has been changed to:\n" +
-                     "```" + welcome_message + "```")
+                     "" + welcome_message + "")
+
+
+@client.command(name='setwelcomechannel',
+                description='Choose the channel where welcome messages are displayed.',
+                brief='Choose the welcome channel.',
+                pass_context=True,)
+async def setwelcomechannel(context):
+    if not context.message.channel_mentions:
+        await client.say("No channel was specified, mention a channel : #channelname.")
+        return
+    elif len(context.message.channel_mentions) > 1:
+        await client.say("Multiple channels specified, the first channel on the list, " +
+                         context.message.channel_mentions[0].mention + ", will be the one set as welcome channel.")
+    else:
+        await client.say("The channel " + context.message.channel_mentions[0].mention +
+                         " will be the one set as welcome channel.")
+
+    SETTINGS_DATA[context.message.server.id]["welcome-channel"] = context.message.channel_mentions[0].id
+    save_data(SETTINGS_DATA)
 
 
 @client.command(name='setserverinfo',
@@ -472,14 +511,161 @@ async def setnegreact(context):
     save_data(SETTINGS_DATA)
 
 
+@client.command(name='kick',
+                description='Kick a user from the server.',
+                brief='Kick a user out.',
+                pass_context=True,)
+async def kick(context, *args):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
+    for target in args:
+        user_id = re.sub('[<@>]', '', target)
+        member = context.message.server.get_member(user_id)
+        if member is None:
+            await client.say("Could not access user " + target + ".")
+            continue
+        await client.kick(member)
+        await client.say(member.mention + " has been kicked from " + context.message.server.name + ".")
+
+
+@client.command(name='textmute',
+                description='Mute a user from typing. Their messages are deleted.',
+                brief='Mute someone from text chat.',
+                pass_context=True,)
+async def textmute(context, *args):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
+    for target in args:
+        user_id = re.sub('[<@>]', '', target)
+        member = context.message.server.get_member(user_id)
+
+        if checked_acquire_setting_dict(context.message.server.id, "textmuted-users") is None:
+            SETTINGS_DATA[context.message.server.id]["textmuted-users"] = []
+        if user_id not in SETTINGS_DATA[context.message.server.id]["textmuted-users"]:
+            SETTINGS_DATA[context.message.server.id]["textmuted-users"].append(user_id)
+            save_data(SETTINGS_DATA)
+        else:
+            await client.say('{} is already muted.'.format(member.mention))
+            continue
+        await client.say('{} has been text muted.'.format(member.mention))
+
+
+@client.command(name='textunmute',
+                description='Unmute a user from typing. Their messages are no longer deleted.',
+                brief='Unmute someone from text chat.',
+                pass_context=True,)
+async def textunmute(context, *args):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
+    for target in args:
+        user_id = re.sub('[<@>]', '', target)
+        member = context.message.server.get_member(user_id)
+
+        if checked_acquire_setting_dict(context.message.server.id, "textmuted-users") is None:
+            SETTINGS_DATA[context.message.server.id]["textmuted-users"] = []
+        if user_id in SETTINGS_DATA[context.message.server.id]["textmuted-users"]:
+            SETTINGS_DATA[context.message.server.id]["textmuted-users"].remove(user_id)
+            save_data(SETTINGS_DATA)
+        else:
+            await client.say('{} is not muted.'.format(member.mention))
+            continue
+        await client.say('{} has been text unmuted.'.format(member.mention))
+
+
+@client.command(name='voicemute',
+                description='Mute  a user from talking on voice channels',
+                brief='Mute someone from voice',
+                pass_context=True,)
+async def voicemute(context, *args):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
+    for target in args:
+        user_id = re.sub('[<@>]', '', target)
+        member = context.message.server.get_member(user_id)
+        await client.server_voice_state(member, mute=True)
+        await client.say('{} has been voice muted.'.format(member.mention))
+
+
+@client.command(name='voicunmute',
+                description='Unmute a user from talking on voice channels',
+                brief='Unmute someone from voice',
+                pass_context=True,)
+async def voiceunmute(context, *args):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
+    for target in args:
+        user_id = re.sub('[<@>]', '', target)
+        member = context.message.server.get_member(user_id)
+        await client.server_voice_state(member, mute=False)
+        await client.say('{} has been voice unmuted.'.format(member.mention))
+
+
+@client.command(name='fullmute',
+                description='Mute a user from both voice chat and typing',
+                brief='Mute someone',
+                pass_context=True,)
+async def fullmute(context, target: str):
+    await textmute(context, target)
+    await voicemute(context, target)
+
+
+@client.command(name='fullunmute',
+                description='Mute a user from typing for a specified amount of time. Their messages are deleted',
+                brief='Mute someone',
+                pass_context=True,)
+async def fullunmute(context, target: str):
+    await textunmute(context, target)
+    await voiceunmute(context, target)
+
+
+@client.command(name='dangerwords',
+                description='List of words than can get you in trouble',
+                brief='Words you should avoid',
+                pass_context=True,)
+async def dangerwords(context):
+    msg = "These words will lead to a warning:\n\n"
+    if SETTINGS_DATA[context.message.server.id]["warn-words"] is None:
+        SETTINGS_DATA[context.message.server.id]["warn-words"] = []
+    if not SETTINGS_DATA[context.message.server.id]["warn-words"]:
+        msg += "None\n"
+    for warn_word in SETTINGS_DATA[context.message.server.id]["warn-words"]:
+        msg += warn_word + "\n"
+    msg = "```" + msg + "```"
+    await client.say(msg)
+
+
+@client.command(name='ping',
+                description='Ping pong',
+                brief='Boop',)
+async def ping():
+    await client.say("Pong!")
+
+
 @client.command(name='test',
                 description='test',
                 brief='test',
                 pass_context=True,)
-async def test(context):
+async def test(context, *args):
     member = context.message.author
-    await client.say(SETTINGS_DATA[member.server.id]["welcome-message"]
-                     .replace("@user", context.message.author.mention))
+
+
+@client.command(name='link',
+                description='Provide link to invite the bot',
+                brief='Invite link for the bot',
+                pass_context=True,)
+async def link(context):
+    await client.\
+        say("https://discordapp.com/api/oauth2/authorize?client_id=433250671521693703&permissions=2146958583&scope=bot")
 
 
 @client.event
@@ -507,13 +693,33 @@ async def on_server_join(server):
 @client.event
 async def on_member_join(member):
     if SETTINGS_DATA[member.server.id]["welcome-message"]:
-        await client.say(SETTINGS_DATA[member.server.id]["welcome-message"]
-                         .replace("@user", member.mention))
+        msg = SETTINGS_DATA[member.server.id]["welcome-message"].replace("@user", member.mention)\
+            .replace("!user", member.name)
+        welcome_channel_id = SETTINGS_DATA[member.server.id]["welcome-channel"]
+        server = member.server
+        await client.send_message((server.get_channel(welcome_channel_id)), msg)
 
 
 @client.event
 async def on_message(message):
     bot_id = client.user.id
+
+    if checked_acquire_setting_dict(message.server.id, "textmuted-users") is not None:
+        if message.author.id in checked_acquire_setting_dict(message.server.id, "textmuted-users"):
+            await client.delete_message(message)
+            return
+
+    if message.content == "Ping!":
+        msg = "Pong!"
+        await client.send_message(message.channel, msg)
+
+    message_content_lower = message.content.lower()
+    for warn_word in SETTINGS_DATA[message.server.id]["warn-words"]:
+        if re.search(warn_word, message_content_lower):
+            msg = "Careful with those words " + message.author.mention + "."
+            await client.send_message(message.channel, msg)
+            break
+
     if bot_id in message.raw_mentions:
         if TextBlob(message.content).sentiment[0] >= 0:
             if SETTINGS_DATA[message.server.id]["pos-react"] is None:
