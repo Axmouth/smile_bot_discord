@@ -45,12 +45,12 @@ async def eight_ball(context):
         'Definitely',
     ]
 
-    await client.say(random.choice(possible_responses) + ", " + context.message.author.mention)
+    await client.say(random.choice(possible_responses) + ", " + context.message.author.mention + ".")
 
 
 @client.command(name='gimme',
-                description='Give yourself a self-assignable role',
-                brief='Self assign roles',
+                description='Give yourself a self-assignable role.',
+                brief='Self assign roles.',
                 aliases=['iam', 'nome', 'assignme'],
                 pass_context=True,)
 async def gimme(context):
@@ -61,20 +61,20 @@ async def gimme(context):
         rolename = context.message.content.split(" ", 1)[1]
         role = discord.utils.get(server.roles, name=rolename)
         if not discord.utils.get(server.roles, name=rolename):
-            await client.say("There is no such role" + ", " + context.message.author.mention)
+            await client.say("There is no such role" + ", " + context.message.author.mention + ".")
             return
         if discord.utils.get(member_roles, name=rolename):
-            await client.say("You already have this role" + ", " + context.message.author.mention)
+            await client.say("You already have this role" + ", " + context.message.author.mention + ".")
             return
         await client.add_roles(member, role)
-        await client.say("You now have the role " + rolename + ", " + context.message.author.mention)
+        await client.say("You now have the role " + rolename + ", " + context.message.author.mention + ".")
     except:
-        await client.say("You cannot assign this role" + ", " + context.message.author.mention)
+        await client.say("You cannot assign this role" + ", " + context.message.author.mention + ".")
 
 
 @client.command(name='offofme',
-                description='Remove from yourself a self-assignable role',
-                brief='Self remove roles',
+                description='Remove from yourself a self-assignable role.',
+                brief='Self remove roles.',
                 aliases=['iamnot', 'noyou', 'no_u', 'remove'],
                 pass_context=True,)
 async def offofme(context):
@@ -84,10 +84,10 @@ async def offofme(context):
     try:
         rolename = context.message.content.split(" ", 1)[1]
         if not discord.utils.get(server.roles, name=rolename):
-            await client.say("There is no such role" + ", " + context.message.author.mention)
+            await client.say("There is no such role" + ", " + context.message.author.mention + ".")
             return
         if not discord.utils.get(member_roles, name=rolename):
-            await client.say("You do not have this role" + ", " + context.message.author.mention)
+            await client.say("You do not have this role" + ", " + context.message.author.mention + ".")
             return
         role = discord.utils.get(server.roles, name=rolename)
         await client.remove_roles(member, role)
@@ -97,8 +97,8 @@ async def offofme(context):
 
 
 @client.command(name='listroles',
-                description='List of all roles',
-                brief='List roles',
+                description='List of all roles.',
+                brief='List roles.',
                 aliases=['roles', 'serverroles', 'assignableroles', 'roles?'],
                 pass_context=True,)
 async def listroles(context):
@@ -117,25 +117,81 @@ async def listroles(context):
         await client.say("Ops?")
 
 
+@client.command(name='userid',
+                description='Get the id of a mentioned user.',
+                brief='Get user id.',
+                pass_context=True,)
+async def userid(context):
+    members = context.message.mentions
+    for member in members:
+        await client.say("User ID for " + member.mention + " : " + member.id)
+
+
+@client.command(name='ban',
+                description='Get the id of a mentioned user.',
+                brief='Get user id.',
+                pass_context=True,)
+async def ban(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
+    members = context.message.mentions
+    args = parse_arguments(context.message)
+    numdays = 1
+    if args:
+        if args[-1].isdigit():
+            numdays = int(args[-1])
+    for member in members:
+        await ban(member, delete_message_days=numdays)
+        await client.say(member.mention + "has been banned from this server.")
+
+
+@client.command(name='unban',
+                description='Get the id of a mentioned user.',
+                brief='Get user id.',
+                pass_context=True,)
+async def unban(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
+    members = context.message.mentions
+    args = parse_arguments(context.message)
+    if not args:
+        banned_users = await client.get_bans(context.message.server)
+        new_message_content = "```The following users have been banned on this server:\n\n"
+        if not banned_users:
+            new_message_content += "None"
+        for banned_user in banned_users:
+            new_message_content += banned_user.mention + " : " + banned_user.id
+        new_message_content += "\n\nUse this command again with an appropriate user ID."
+        new_message_content += "```"
+        await client.say(new_message_content)
+    for member in members:
+        await unban(context.message.server, member)
+        await client.say(member.mention + "has been unbanned from this server.")
+
+
 @client.command()
 async def bitcoin():
     url = 'https://api.coindesk.com/v1/bpi/currentprice/BTC.json'
     try:
         response = requests.get(url)
         value = response.json()['bpi']['USD']['rate']
-        await client.say("Bitcoin price is: $" + value)
+        await client.say("Bitcoin price is: $" + value + ".")
     except:
         await client.say("Error contacting server..")
 
 
 @client.command(name='asr',
-                description='Add a role to the list of self-assignable roles',
-                brief='Add a self-assignable role',
+                description='Add a role to the list of self-assignable roles.',
+                brief='Add a self-assignable role.',
                 pass_context=True,)
 async def asr(context):
     is_admin = check_admin(context.message)
     if not is_admin:
-        await client.say("You do not have permissions to use this command")
+        await client.say("You do not have permissions to use this command.")
         return
     global SETTINGS_DATA
     server = context.message.server
@@ -143,27 +199,27 @@ async def asr(context):
         rolenames = parse_arguments(context.message)
         for rolename in rolenames:
             if not discord.utils.get(server.roles, name=rolename):
-                await client.say("There is no such role" + ", " + context.message.author.mention)
+                await client.say("There is no such role" + ", " + context.message.author.mention + ".")
                 continue
             if rolename in SETTINGS_DATA[server.id]["assignable-roles"]:
-                await client.say("The role " + rolename + " is already on the list of self-assignable roles")
+                await client.say("The role " + rolename + " is already on the list of self-assignable roles.")
                 continue
-            await client.say("The role " + rolename + " was added to the list of self-assignable roles")
+            await client.say("The role " + rolename + " was added to the list of self-assignable roles.")
             SETTINGS_DATA[server.id]["assignable-roles"].append(rolename)
     except:
-        await client.say("Error adding role")
+        await client.say("Error adding role.")
 
     save_data(SETTINGS_DATA)
 
 
 @client.command(name='rsr',
-                description='Remove a role from the list of self-assignable roles',
-                brief='Remove a self-assignable role',
+                description='Remove a role from the list of self-assignable roles.',
+                brief='Remove a self-assignable role.',
                 pass_context=True,)
 async def rsr(context):
     is_admin = check_admin(context.message)
     if not is_admin:
-        await client.say("You do not have permissions to use this command")
+        await client.say("You do not have permissions to use this command.")
         return
     global SETTINGS_DATA
     server = context.message.server
@@ -174,24 +230,24 @@ async def rsr(context):
                 await client.say("There is no such role" + ", " + context.message.author.mention)
                 continue
             if rolename not in SETTINGS_DATA[server.id]["assignable-roles"]:
-                await client.say("The role " + rolename + " is already not on the list of self-assignable roles")
+                await client.say("The role " + rolename + " is already not on the list of self-assignable roles.")
                 continue
             SETTINGS_DATA[server.id]["assignable-roles"].remove(rolename)
-            await client.say("The role " + rolename + " was removed from the list of self-assignable roles")
+            await client.say("The role " + rolename + " was removed from the list of self-assignable roles.")
     except:
-        await client.say("Error removing role")
+        await client.say("Error removing role.")
 
     save_data(SETTINGS_DATA)
 
 
 @client.command(name='addwarnword',
-                description='Add a word/saying that will give a warning to users',
-                brief='Add a warning worthy word',
+                description='Add a word/saying that will give a warning to users.',
+                brief='Add a warning worthy word.',
                 pass_context=True,)
 async def addwarnword(context):
     is_admin = check_admin(context.message)
     if not is_admin:
-        await client.say("You do not have permissions to use this command")
+        await client.say("You do not have permissions to use this command.")
         return
     global SETTINGS_DATA
     server = context.message.server
@@ -199,9 +255,9 @@ async def addwarnword(context):
         words = parse_arguments(context.message)
         for word in words:
             if word in SETTINGS_DATA[server.id]["warn-words"]:
-                await client.say(word + " is already on the list of warn words")
+                await client.say(word + " is already on the list of warn words.")
                 continue
-            await client.say(word + " was added to the list of warn words")
+            await client.say(word + " was added to the list of warn words.")
             SETTINGS_DATA[server.id]["assignable-roles"].append(word)
     except:
         await client.say("Error adding word")
@@ -210,13 +266,13 @@ async def addwarnword(context):
 
 
 @client.command(name='removewarnword',
-                description='Remove a word/saying that will give a warning to users',
-                brief='Remove a warning worthy word',
+                description='Remove a word/saying that will give a warning to users.',
+                brief='Remove a warning worthy word.',
                 pass_context=True,)
 async def removewarnword(context):
     is_admin = check_admin(context.message)
     if not is_admin:
-        await client.say("You do not have permissions to use this command")
+        await client.say("You do not have permissions to use this command.")
         return
     global SETTINGS_DATA
     server = context.message.server
@@ -224,24 +280,24 @@ async def removewarnword(context):
         words = parse_arguments(context.message)
         for word in words:
             if word not in SETTINGS_DATA[server.id]["warn-words"]:
-                await client.say(word + " is already not on the list of warn words")
+                await client.say(word + " is already not on the list of warn words.")
                 continue
-            await client.say(word + " was removed the list of warn words")
+            await client.say(word + " was removed the list of warn words.")
             SETTINGS_DATA[server.id]["assignable-roles"].remove(word)
     except:
-        await client.say("Error removing word")
+        await client.say("Error removing word.")
 
     save_data(SETTINGS_DATA)
 
 
 @client.command(name='welcomemsg',
-                description='Add a welcome message for new members',
-                brief='Add a welcome message',
+                description='Add a welcome message for new members.',
+                brief='Add a welcome message.',
                 pass_context=True,)
 async def welcomemsg(context):
     is_admin = check_admin(context.message)
     if not is_admin:
-        await client.say("You do not have permissions to use this command")
+        await client.say("You do not have permissions to use this command.")
         return
     global SETTINGS_DATA
     member = context.message.author
@@ -253,13 +309,13 @@ async def welcomemsg(context):
 
 
 @client.command(name='setserverinfo',
-                description='Add a server info message',
-                brief='Add server info',
+                description='Add a server info message.',
+                brief='Add server info.',
                 pass_context=True,)
 async def setserverinfo(context):
     is_admin = check_admin(context.message)
     if not is_admin:
-        await client.say("You do not have permissions to use this command")
+        await client.say("You do not have permissions to use this command.")
         return
     global SETTINGS_DATA
     member = context.message.author
@@ -268,18 +324,18 @@ async def setserverinfo(context):
     server_info = context.message.content.split(" ", 1)[1]
     SETTINGS_DATA[member.server.id]["server-info"] = server_info
     save_data(SETTINGS_DATA)
-    await client.say("The server info message has been changed to:\n" +
+    await client.say("The server info message has been changed to:\n\n" +
                      "```" + server_info + "```")
 
 
 @client.command(name='serverinfo',
-                description='Display server info message',
-                brief='Display server info',
+                description='Display server info message.',
+                brief='Display server info.',
                 pass_context=True,)
 async def serverinfo(context):
     member = context.message.author
     if not SETTINGS_DATA[member.server.id]["server-info"]:
-        await client.say("The server info message for this server has not been set")
+        await client.say("The server info message for this server has not been set.")
         return
     await client.say(SETTINGS_DATA[member.server.id]["server-info"]
                      .replace("@user", context.message.author.mention))
@@ -287,13 +343,13 @@ async def serverinfo(context):
 
 
 @client.command(name='setchannelinfo',
-                description='Add a channel info message',
-                brief='Add channel info',
+                description='Add a channel info message.',
+                brief='Add channel info.',
                 pass_context=True,)
 async def setchannelinfo(context):
     is_admin = check_admin(context.message)
     if not is_admin:
-        await client.say("You do not have permissions to use this command")
+        await client.say("You do not have permissions to use this command.")
         return
     global SETTINGS_DATA
     member = context.message.author
@@ -303,7 +359,7 @@ async def setchannelinfo(context):
     channel_info = context.message.content.split(" ", 1)[1]
     SETTINGS_DATA[member.server.id]["channel-info"][context.message.channel.id] = channel_info
     save_data(SETTINGS_DATA)
-    await client.say("The channel info message for" + " has been changed to:\n" +
+    await client.say("The channel info message for" + " has been changed to:\n\n" +
                      "```" + channel_info + "```")
 
 
@@ -314,7 +370,7 @@ async def setchannelinfo(context):
 async def channelinfo(context):
     member = context.message.author
     if context.message.channel.id not in SETTINGS_DATA[member.server.id]["channel-info"] or not SETTINGS_DATA[member.server.id]["channel-info"][context.message.channel.id]:
-        await client.say("The channel info message for this channel has not been set")
+        await client.say("The channel info message for this channel has not been set.")
         return
     await client.say(SETTINGS_DATA[member.server.id]["channel-info"][context.message.channel.id]
                      .replace("@user", context.message.author.mention))
@@ -322,10 +378,14 @@ async def channelinfo(context):
 
 
 @client.command(name='setnegreact',
-                description='Set negative reaction when bot is mentioned',
-                brief="Set bot's negative reaction",
+                description='Set negative reaction when bot is mentioned.',
+                brief="Set bot's negative reaction.",
                 pass_context=True,)
-async def test(context):
+async def setnegreact(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
     words = parse_arguments(context.message)
     checked_acquire_setting_dict(context.message.server.id, "neg-react")
     SETTINGS_DATA[context.message.server.id]["neg-react"] = []
@@ -340,10 +400,14 @@ async def test(context):
 
 
 @client.command(name='setposreact',
-                description='Set positive reaction when bot is mentioned',
-                brief="Set bot's positive reaction",
+                description='Set positive reaction when bot is mentioned.',
+                brief="Set bot's positive reaction.",
                 pass_context=True,)
-async def test(context):
+async def setnegreact(context):
+    is_admin = check_admin(context.message)
+    if not is_admin:
+        await client.say("You do not have permissions to use this command.")
+        return
     words = parse_arguments(context.message)
     checked_acquire_setting_dict(context.message.server.id, "pos-react")
     SETTINGS_DATA[context.message.server.id]["pos-react"] = []
@@ -434,7 +498,7 @@ def check_admin(message):
 async def check_admin_plus(message):
     is_admin = check_admin(message)
     if not is_admin:
-        await client.say("You do not have permissions to use this command")
+        await client.say("You do not have permissions to use this command.")
 
 
 def checked_acquire_setting_dict(server_id, setting_category):
